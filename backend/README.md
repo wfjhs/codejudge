@@ -72,7 +72,8 @@ backend/
 mysql -u root -p --default-character-set=utf8mb4 < sql/init.sql
 ```
 
-会创建 `codejudge` 库和 `user`、`problem` 两张表。
+会创建 `codejudge` 库和 `user`、`problem`、`test_case`、`submission` 四张表
+（表结构见 [数据库设计](../docs/DATABASE.md)）。
 
 数据库账号密码在 `cj-web/src/main/resources/application.yml`：
 

@@ -113,6 +113,9 @@ codejudge/
 
 依赖方向严格单向：`cj-web → cj-service → cj-dao → cj-model → cj-common`。
 
+> 模块职责与设计取舍见 **[架构文档](docs/ARCHITECTURE.md)**——含 7 张 Mermaid 图（架构、时序、状态机、ER 图）、
+> 错误码分段、幂等的三个层次、沙箱的编码一致性等；表结构与索引设计见 **[数据库设计](docs/DATABASE.md)**。
+
 ## 设计要点
 
 **异步判题**：提交接口只做落库和入队，判题耗时与 HTTP 请求彻底解耦。
