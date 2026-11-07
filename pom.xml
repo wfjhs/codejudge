@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.codejudge</groupId>
+    <artifactId>codejudge-build</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>CodeJudge</name>
+    <description>在线判题系统。本 POM 只是仓库级构建入口，真正的多模块结构在 backend。</description>
+
+    <!--
+        纯聚合 POM，不是子模块的 parent。
+        放在仓库根的作用只有一个：让「clone 下来在根目录就能构建」成立，
+        省掉 cd backend 这一步。
+        子模块的 parent 是 backend/pom.xml。
+    -->
+    <modules>
+        <module>backend</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+</project>

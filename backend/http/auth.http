@@ -1,0 +1,52 @@
+### 1. 注册（第一个注册的用户自动成为管理员）
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456",
+  "nickname": "管理员"
+}
+
+### 2. 注册 - 参数校验失败示例（用户名太短）
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "ab",
+  "password": "123456"
+}
+
+### 3. 注册 - 用户名重复示例
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+### 4. 登录（执行后 token 会自动写入全局变量）
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+> {%
+    client.global.set("token", response.body.data.token);
+    client.log("token = " + response.body.data.token);
+%}
+
+### 5. 当前登录用户信息（依赖上面的 token）
+GET http://localhost:8080/api/users/me
+Authorization: Bearer {{token}}
+
+### 6. 不带 token 访问（应返回 401 未登录）
+GET http://localhost:8080/api/users/me
+
+### 7. 带非法 token 访问（应返回 1004 凭证无效）
+GET http://localhost:8080/api/users/me
+Authorization: Bearer abc.def.ghi

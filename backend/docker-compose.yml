@@ -1,0 +1,66 @@
+# ============================================================
+# CodeJudge 本地依赖编排
+#
+# 只包含项目真正依赖的两个中间件：
+#   - MySQL 8：用户 / 题目 / 用例 / 提交
+#   - Redis 7：判题队列（Stream）、限流、题目缓存、排行榜
+#
+# 用法：
+#   docker compose up -d      启动（首次会执行 sql/ 下的初始化脚本）
+#   docker compose ps         查看状态
+#   docker compose logs -f    看日志
+#   docker compose down       停止（保留数据）
+#   docker compose down -v    停止并清空数据卷
+#
+# 如果你的机器上已经直装了 MySQL / Redis（本仓库开发时就是这种情况），
+# 完全不需要这个文件，直接按 README 的「快速开始」走即可。
+#
+# 历史说明：早期版本这里配的是 RabbitMQ，但判题队列最终用 Redis Stream 实现，
+# RabbitMQ 从未被应用连接过，属于规划残留，已移除。
+# ============================================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: codejudge-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: "codejudge"
+      TZ: "Asia/Shanghai"
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_general_ci"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # init.sql 自带 CREATE DATABASE + USE，按文件名顺序先建表再灌种子数据
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./sql/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: codejudge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    # 判题 Stream 需要持久化，避免容器重启后未消费的任务丢失
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mysql-data:
+  redis-data:

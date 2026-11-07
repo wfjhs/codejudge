@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (JDK 21)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      # install 而非 package：多模块之间互相依赖，需要先装进本地仓库
+      - name: Build and test
+        run: mvn -B -f pom.xml --no-transfer-progress install
+
+      - name: Upload executable jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: codejudge-jar
+          path: backend/cj-web/target/codejudge.jar
+          if-no-files-found: warn
+
+  frontend:
+    name: Frontend (Node 20)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build

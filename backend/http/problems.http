@@ -1,0 +1,103 @@
+### 说明
+# 先跑 auth.http 里的「登录」，token 会自动写入全局变量 {{token}}
+# 管理员账号 admin 才能调用 /api/admin/** 接口
+
+### 1. 创建题目（管理员）
+POST http://localhost:8080/api/admin/problems
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "A+B Problem",
+  "content": "# 题目描述\n输入两个整数，输出它们的和。\n\n## 输入格式\n一行两个整数 a b，用空格分隔。\n\n## 输出格式\n一个整数，表示 a + b 的结果。",
+  "difficulty": 1,
+  "timeLimit": 1000,
+  "memoryLimit": 256,
+  "cases": [
+    { "input": "1 2", "output": "3", "isSample": 1, "score": 0 },
+    { "input": "10 20", "output": "30", "isSample": 1, "score": 0 },
+    { "input": "SECRET_INPUT_999", "output": "SECRET_OUTPUT_999", "isSample": 0, "score": 100 }
+  ]
+}
+
+### 2. 题目列表（不返回题面，注意响应里没有 content 字段）
+GET http://localhost:8080/api/problems?page=1&size=10
+Authorization: Bearer {{token}}
+
+### 3. 题目列表 - 按难度筛选（1-简单 2-中等 3-困难）
+GET http://localhost:8080/api/problems?page=1&size=10&difficulty=1
+Authorization: Bearer {{token}}
+
+### 4. 题目列表 - 关键字搜索 + 按提交数排序
+GET http://localhost:8080/api/problems?page=1&size=10&keyword=A%2BB&sortBy=submitCount&asc=false
+Authorization: Bearer {{token}}
+
+### 5. 题目详情（只返回示例用例，看不到 SECRET_INPUT_999）
+GET http://localhost:8080/api/problems/1
+Authorization: Bearer {{token}}
+
+### 6. 管理端详情（能看到全部 3 个用例，含隐藏用例）
+GET http://localhost:8080/api/admin/problems/1
+Authorization: Bearer {{token}}
+
+### 7. 更新题目（用例全量替换：旧的会被删掉）
+PUT http://localhost:8080/api/admin/problems/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "A+B Problem（加强版）",
+  "content": "# 新题面\n输入两个大整数。",
+  "difficulty": 2,
+  "timeLimit": 2000,
+  "memoryLimit": 512,
+  "cases": [
+    { "input": "5 5", "output": "10", "isSample": 1, "score": 0 },
+    { "input": "NEW_SECRET", "output": "NEW_SECRET_OUT", "isSample": 0, "score": 100 }
+  ]
+}
+
+### 8. 删除题目（逻辑删除，删完再查详情会返回 2001）
+DELETE http://localhost:8080/api/admin/problems/1
+Authorization: Bearer {{token}}
+
+### 9. 参数校验：难度越界（应返回 400）
+POST http://localhost:8080/api/admin/problems
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "测试",
+  "content": "x",
+  "difficulty": 9,
+  "cases": [{ "input": "a", "output": "b", "isSample": 1 }]
+}
+
+### 10. 参数校验：没有测试用例（应返回 400）
+POST http://localhost:8080/api/admin/problems
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "测试",
+  "content": "x",
+  "difficulty": 1,
+  "cases": []
+}
+
+### 11. 不存在的题目（应返回 2001）
+GET http://localhost:8080/api/problems/999999
+Authorization: Bearer {{token}}
+
+### 12. 普通用户访问管理端接口（应返回 403）
+# 先用 testuser / 123456 登录，把它的 token 粘到下面
+POST http://localhost:8080/api/admin/problems
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "title": "x",
+  "content": "x",
+  "difficulty": 1,
+  "cases": [{ "input": "a", "output": "b", "isSample": 1 }]
+}

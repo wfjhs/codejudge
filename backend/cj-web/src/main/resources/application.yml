@@ -1,0 +1,92 @@
+server:
+  port: 8080
+  # 开启优雅停机：收到 SIGTERM 后先处理完在途请求再退出，避免判题结果回写被截断
+  shutdown: graceful
+
+spring:
+  application:
+    name: codejudge
+
+  # JDK 21 虚拟线程。判题服务是 IO 密集型（等数据库、等 MQ），
+  # 虚拟线程可以让少量平台线程承载大量阻塞请求，压测时会和传统线程池做对比。
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:codejudge}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    hikari:
+      # 连接池上限。虚拟线程下不能盲目放大连接数，
+      # 数据库连接才是真正的稀缺资源，池子过大只会把 MySQL 压垮。
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: CodeJudgeHikari
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 2000ms
+
+mybatis-plus:
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    # 开发期打印 SQL 与结果集，上线前改为 NoLoggingImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  # HS256 要求密钥不少于 32 字节。生产环境必须通过环境变量注入，不能写在代码仓库里
+  secret: ${JWT_SECRET:codejudge-dev-only-secret-please-change-in-production-2026}
+  expire: 86400
+
+codejudge:
+  judge:
+    # 判题引擎：mock - 不执行真实代码，只跑通链路；local - 进程级沙箱真实执行
+    engine: ${JUDGE_ENGINE:local}
+    # 是否在本进程内启动队列消费者
+    consumer-enabled: ${JUDGE_CONSUMER_ENABLED:true}
+    # 消费者并发数（每个并发一个虚拟线程）
+    concurrency: ${JUDGE_CONCURRENCY:1}
+    # 消费者名，多实例部署时必须不同，否则 pending 消息的归属会混乱
+    consumer-name: ${JUDGE_CONSUMER_NAME:judge-1}
+    sandbox:
+      # 运行 Python 代码的可执行文件（解释型语言，不需要编译）。本机没装就只支持 Java
+      python-command: ${PYTHON_COMMAND:python}
+      # 沙箱临时工作目录根。每一条提交在下面建一个 sandbox-xxx 目录，判完即删
+      work-dir-base: ${SANDBOX_WORK_DIR:${java.io.tmpdir}/codejudge-sandbox}
+
+logging:
+  level:
+    root: info
+    com.codejudge: debug
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
