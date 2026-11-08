@@ -1,5 +1,7 @@
 # CodeJudge
 
+[![CI](https://github.com/WFJHS/codejudge/actions/workflows/ci.yml/badge.svg)](https://github.com/WFJHS/codejudge/actions/workflows/ci.yml)
+
 在线判题系统（Online Judge）：提交代码 → 异步判题 → 进程级沙箱执行 → 实时推送结果。
 
 前端 Vue 3 + TypeScript，后端 Spring Boot 3 + MyBatis-Plus，判题队列用 Redis Stream，
